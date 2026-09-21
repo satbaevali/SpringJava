@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: course-project
+  profiles:
+    active: dev
+
+app:
+  name: Course Project
+  page-size: 20
+  feature:
+    mode: default
+    timeout-seconds: 30
