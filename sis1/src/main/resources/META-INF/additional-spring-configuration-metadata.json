@@ -1,0 +1,18 @@
+{
+  "properties": [
+    {
+      "name": "app.feature.sms-enabled",
+      "type": "java.lang.String",
+      "description": "Description for app.feature.sms-enabled."
+    },
+    {
+      "name": "app.page-size",
+      "type": "java.lang.String",
+      "description": "Description for app.page-size."
+    },
+    {
+      "name": "app.name",
+      "type": "java.lang.String",
+      "description": "Description for app.name."
+    }
+  ] }

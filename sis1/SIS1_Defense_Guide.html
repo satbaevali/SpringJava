@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Защита курсового проекта SIS 1 — REST API Online Store</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: #1f2937;
+            background: #ffffff;
+            margin: 0;
+            padding: 24px;
+        }
+        h1 {
+            color: #111827;
+            font-size: 24px;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+        h2 {
+            color: #1e40af;
+            font-size: 18px;
+            margin-top: 24px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 6px;
+        }
+        h3 {
+            color: #374151;
+            font-size: 15px;
+            margin-top: 16px;
+        }
+        p, li {
+            font-size: 13px;
+        }
+        .header-box {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+        }
+        .header-box p {
+            margin: 4px 0;
+            font-weight: 500;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0 20px 0;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid #d1d5db;
+            padding: 8px 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f3f4f6;
+            color: #111827;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        .badge-warn { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        code {
+            font-family: Menlo, Monaco, Consolas, monospace;
+            background-color: #f3f4f6;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 12px;
+            color: #b91c1c;
+        }
+        pre {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        .qa-box {
+            background-color: #f8fafc;
+            border-left: 4px solid #3b82f6;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            border-radius: 0 4px 4px 0;
+        }
+        .qa-q {
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 4px;
+        }
+        .qa-a {
+            color: #334155;
+            margin: 0;
+        }
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-box">
+        <h1 style="border:none; margin:0; font-size:22px; color:#15803d;">Доклад к защите SIS 1: REST API курса «Backend Framework»</h1>
+        <p><strong>Тема проекта:</strong> Интернет-магазин электроники (Online Store REST API: Категории, Товары, Заказы)</p>
+        <p><strong>Стек технологий:</strong> Java 17+, Spring Boot, Spring MVC, Jakarta Bean Validation, Lombok, Maven Profiles, IntelliJ HTTP Client</p>
+        <p><strong>Максимальный балл:</strong> 6 из 6 (Все требования чеклиста выполнены на 100%)</p>
+    </div>
+
+    <h2>1. Архитектура и структура проекта</h2>
+    <p>Проект построен по стандартам промышленной многослойной архитектуры (Layered Architecture):</p>
+    <ul>
+        <li><code>config</code> — привязка типобезопасных настроек через <code>@ConfigurationProperties</code> (класс <code>AppProperties</code>) и стартовый логгер <code>StartupLogger</code>.</li>
+        <li><code>model</code> — чистые доменные сущности (<code>Category</code>, <code>Product</code>, <code>Order</code>, <code>OrderItem</code>, <code>OrderStatus</code>).</li>
+        <li><code>repository</code> — абстракция доступа к данным: интерфейсы + потокобезопасная In-Memory реализация на <code>ConcurrentHashMap</code> и <code>AtomicLong</code>.</li>
+        <li><code>dto</code> — объекты передачи данных (Request / Response DTO на базе Java <code>record</code>) с аннотациями Bean Validation.</li>
+        <li><code>exception</code> — перехватчик исключений <code>@RestControllerAdvice</code> и единый формат ошибок <code>ApiErrorResponse</code>.</li>
+        <li><code>service</code> — изолированная бизнес-логика (списание остатков со склада, подсчет чека, проверка дубликатов).</li>
+        <li><code>web</code> — REST-контроллеры, возвращающие корректные HTTP статус-коды (<code>201 + Location</code>, <code>200</code>, <code>204</code>).</li>
+    </ul>
+
+    <h2>2. Защита всех 6 пунктов чек-листа</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width:28%;">Требование из силлабуса</th>
+                <th style="width:36%;">Как реализовано в коде</th>
+                <th style="width:36%;">Что говорить преподавателю</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>1. CRUD endpoints with DTOs</strong></td>
+                <td>
+                    Для ресурсов <code>Category</code>, <code>Product</code>, <code>Order</code> созданы раздельные <code>Request</code> и <code>Response</code> DTO (records).
+                </td>
+                <td>
+                    «DTO отделяют контракт API от внутренней модели. В RequestDTO клиент не может подделать ID или дату создания, а в ResponseDTO мы добавляем вычисляемые поля, например имя категории».
+                </td>
+            </tr>
+            <tr>
+                <td><strong>2. Bean Validation (@Valid)</strong></td>
+                <td>
+                    В DTO применены аннотации: <code>@NotBlank</code>, <code>@Size</code>, <code>@Positive</code>, <code>@Pattern</code> (для SKU), <code>@Email</code>. В контроллерах перед телом запроса стоит <code>@Valid @RequestBody</code>. Вложенный список валидируется каскадно: <code>List&lt;@Valid OrderItemRequest&gt;</code>.
+                </td>
+                <td>
+                    «Все входящие данные валидируются декларативно через Jakarta Validation. Если клиент шлет отрицательную цену, неверный email или пустую строку, запрос перехватывается до бизнес-логики».
+                </td>
+            </tr>
+            <tr>
+                <td><strong>3. Unified error format</strong></td>
+                <td>
+                    Класс <code>GlobalExceptionHandler</code> с аннотацией <code>@RestControllerAdvice</code> перехватывает все исключения и формирует объект <code>ApiErrorResponse</code>.
+                </td>
+                <td>
+                    «Любая ошибка на сервере возвращает стандартизированный JSON с полями timestamp, status, error, message, path и детальным списком ошибок fieldErrors для фронтенда».
+                </td>
+            </tr>
+            <tr>
+                <td><strong>4. Correct HTTP status codes</strong></td>
+                <td>
+                    <code>200 OK</code> — чтение и обновление;<br>
+                    <code>201 Created</code> + <code>Location</code> header — создание;<br>
+                    <code>204 No Content</code> — удаление;<br>
+                    <code>400 Bad Request</code> — невалидные данные;<br>
+                    <code>404 Not Found</code> — ресурс не найден;<br>
+                    <code>409 Conflict</code> — бизнес-конфликт.
+                </td>
+                <td>
+                    «Сервер строго соблюдает REST-стандарты. При создании через POST мы возвращаем заголовок Location с URL созданного ресурса (через ServletUriComponentsBuilder), а при удалении — 204 No Content».
+                </td>
+            </tr>
+            <tr>
+                <td><strong>5. Maven build with profiles</strong></td>
+                <td>
+                    В <code>pom.xml</code> настроены профили <code>dev</code> (порт 8080, активен по умолчанию) и <code>test</code> (порт 8081). Настройки связаны с <code>AppProperties</code>.
+                </td>
+                <td>
+                    «Настройки разделены по профилям: dev для локальной разработки и test для тестирования. Переключение работает через флаг Maven -Ptest без изменения кода».
+                </td>
+            </tr>
+            <tr>
+                <td><strong>6. HTTP-client collection</strong></td>
+                <td>
+                    Файл <code>requests.http</code> в корне проекта. 28 готовых запросов для IntelliJ IDEA HTTP Client.
+                </td>
+                <td>
+                    «Коллекция покрывает все эндпоинты: демонстрирует как успешные сценарии (200, 201, 204), так и все возможные ошибки (400, 404, 409)».
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h2>3. Топ-7 вопросов преподавателя и идеальные ответы</h2>
+
+    <div class="qa-box">
+        <div class="qa-q">1. Почему вы использовали интерфейсы для репозиториев, если сейчас всё хранится в памяти?</div>
+        <p class="qa-a"><strong>Ответ:</strong> Это принцип инверсии зависимостей (DIP из SOLID). В силлабусе указано, что на 5–6 неделях мы заменим память на PostgreSQL и Flyway. Благодаря интерфейсам <code>CategoryRepository</code>, <code>ProductRepository</code> и <code>OrderRepository</code>, нам потребуется только подключить Spring Data JPA к базе данных, а контроллеры, DTO и сервисы не изменятся ни на одну строчку.</p>
+    </div>
+
+    <div class="qa-box">
+        <div class="qa-q">2. Почему для цен и денежных расчетов используется BigDecimal, а не double или float?</div>
+        <p class="qa-a"><strong>Ответ:</strong> Типы <code>double</code> и <code>float</code> используют двоичное представление с плавающей точкой, из-за чего возникают погрешности округления (например, 0.1 + 0.2 дает 0.30000000000000004). В e-commerce и финансовом секторе это приводит к ошибкам в балансах и чеках, поэтому стандарт для денег в Java — это класс точной десятичной арифметики <code>BigDecimal</code>.</p>
+    </div>
+
+    <div class="qa-box">
+        <div class="qa-q">3. Зачем в репозитории применены ConcurrentHashMap и AtomicLong вместо обычных HashMap и long?</div>
+        <p class="qa-a"><strong>Ответ:</strong> Веб-сервер Spring Boot обрабатывает каждый HTTP-запрос в отдельном потоке пула Tomcat. Обычный <code>HashMap</code> в многопоточной среде может повредить внутреннюю структуру или зациклиться. <code>ConcurrentHashMap</code> гарантирует потокобезопасность. А <code>AtomicLong</code> выполняет потокобезопасный инкремент ID через процессорную операцию CAS (Compare-And-Swap), исключая дубликаты ID при параллельных запросах.</p>
+    </div>
+
+    <div class="qa-box">
+        <div class="qa-q">4. Что такое каскадная валидация в OrderRequest?</div>
+        <p class="qa-a"><strong>Ответ:</strong> В классе <code>OrderRequest</code> поле позиций заказа объявлено как <code>List&lt;@Valid OrderItemRequest&gt; items</code>. Аннотация <code>@Valid</code> перед типом элемента указывает Спрингу валидировать каждый объект внутри списка. Если у хотя бы одного товара количество меньше 1 или не указан productId, запрос будет отклонен с 400 Bad Request.</p>
+    </div>
+
+    <div class="qa-box">
+        <div class="qa-q">5. В каких случаях ваш API возвращает 409 Conflict?</div>
+        <p class="qa-a"><strong>Ответ:</strong> Статус <code>409 Conflict</code> возвращается при нарушении бизнес-правил согласованности данных:
+        <br>1) Попытка создать категорию с уже существующим именем;
+        <br>2) Попытка создать товар с дублирующимся артикулом (SKU);
+        <br>3) Попытка удалить категорию, в которой еще есть товары;
+        <br>4) Попытка заказать товара больше, чем фактически имеется на складе;
+        <br>5) Попытка изменить статус уже доставленного (DELIVERED) или отмененного заказа.</p>
+    </div>
+
+    <div class="qa-box">
+        <div class="qa-q">6. Зачем нужен заголовок Location при статусе 201 Created?</div>
+        <p class="qa-a"><strong>Ответ:</strong> По спецификации RFC 7231 и стандарту REST, при успешном создании нового ресурса сервер обязан вернуть не только статус 201, но и ссылку (URI), по которой клиент может сразу запросить этот созданный ресурс. Мы формируем его динамически через <code>ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(created.id()).toUri()</code>.</p>
+    </div>
+
+    <div class="qa-box">
+        <div class="qa-q">7. Как устроен единый формат ошибок через @RestControllerAdvice?</div>
+        <p class="qa-a"><strong>Ответ:</strong> Аннотация <code>@RestControllerAdvice</code> делает класс глобальным перехватчиком исключений для всех контроллеров проекта. Методы с аннотацией <code>@ExceptionHandler</code> ловят конкретные ошибки (<code>MethodArgumentNotValidException</code>, <code>ResourceNotFoundException</code>, <code>ResourceConflictException</code>) и оборачивают их в единый рекорд <code>ApiErrorResponse</code> с полями timestamp, status, error, message, path и картой полей с ошибками fieldErrors.</p>
+    </div>
+
+    <h2>4. 3-минутный сценарий живой демонстрации на защите</h2>
+    <ol>
+        <li><strong>Шаг 1 (Запуск):</strong> Запустите <code>Sis1Application</code>. Обратите внимание преподавателя на лог консоли:
+            <br><code>>>> Активные профили: [dev] | app.name='Online Store API (DEV)' | app.pageSize=50 <<<</code>
+            <br><em>(Показывает выполнение пункта 5 о профилях).</em>
+        </li>
+        <li><strong>Шаг 2 (Успешные операции):</strong> Откройте файл <code>requests.http</code> в IntelliJ IDEA. Нажмите зеленую кнопку <strong>▶</strong> на запросе <code>1.4 [POST] Create category</code>.
+            <br>Покажите, что ответ вернул <strong>201 Created</strong>, и в заголовках ответа появился <strong>Location: http://localhost:8080/api/v1/categories/4</strong>.
+        </li>
+        <li><strong>Шаг 3 (Валидация Bean Validation):</strong> Выполните запрос <code>2.6 [POST] Create product with invalid fields</code>.
+            <br>Покажите ответ <strong>400 Bad Request</strong> и единый JSON со списком некорректных полей:
+            <br><code>{"sku": "SKU must match pattern...", "price": "Price must be greater than 0"}</code>.
+        </li>
+        <li><strong>Шаг 4 (Бизнес-конфликты 409):</strong> Выполните запрос <code>1.8 Delete category with products</code> (попытка удалить категорию Laptops с товарами).
+            <br>Покажите статус <strong>409 Conflict</strong>: <em>«Cannot delete category with id=1 because it still contains products»</em>.
+        </li>
+        <li><strong>Шаг 5 (Работа со складом при заказе):</strong> Выполните запрос <code>3.6 Create order with insufficient stock</code> (заказ 95 макбуков при остатке 10).
+            <br>Покажите статус <strong>409 Conflict</strong> с точным сообщением о нехватке остатков.
+        </li>
+        <li><strong>Шаг 6 (Удаление):</strong> Выполните запрос <code>1.9 Delete empty category</code>.
+            <br>Покажите статус <strong>204 No Content</strong> с пустым телом ответа.
+        </li>
+    </ol>
+
+</body>
+</html>
