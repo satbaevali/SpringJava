@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Шпаргалка к защите Практики 4 (Spring Data JPA, PostgreSQL)</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.6; color: #222; max-width: 900px; margin: 30px auto; padding: 0 20px; }
+  h1 { color: #1a365d; border-bottom: 2px solid #2b6cb0; padding-bottom: 10px; }
+  h2 { color: #2b6cb0; margin-top: 30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+  h3 { color: #2d3748; margin-top: 20px; }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+  .badge-success { background: #c6f6d5; color: #22543d; }
+  .badge-warn { background: #feebc8; color: #744210; }
+  .card { background: #f7fafc; border-left: 4px solid #3182ce; padding: 15px 20px; margin: 15px 0; border-radius: 0 6px 6px 0; }
+  .qa { background: #edf2f7; padding: 14px 18px; border-radius: 6px; margin-bottom: 14px; }
+  .q { font-weight: bold; color: #2c5282; margin-bottom: 6px; }
+  .a { color: #1a202c; }
+  table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+  th, td { border: 1px solid #cbd5e0; padding: 8px 12px; text-align: left; }
+  th { background: #edf2f7; color: #2d3748; }
+  code { background: #edf2f7; padding: 2px 6px; border-radius: 4px; font-family: Menlo, Monaco, Consolas, monospace; font-size: 13px; color: #805ad5; }
+  pre { background: #2d3748; color: #f7fafc; padding: 14px; border-radius: 6px; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h1>🎓 Шпаргалка к защите Практики 4: PostgreSQL & Spring Data JPA</h1>
+<p><b>Курс:</b> INFT3132 Backend Framework. Spring (KBTU, Week 05)</p>
+<p><b>Тема:</b> Data Access, Connection Pooling (HikariCP), Transactions (@Transactional), Spring Data JPA, Pagination.</p>
+
+<h2>📋 1. Чек-лист соответствия слайду 30 (Deliverables)</h2>
+<table>
+  <tr><th>Требование лекции</th><th>Как реализовано у нас</th><th>Где показать в коде</th></tr>
+  <tr>
+    <td><b>PostgreSQL DataSource</b> (пароль из env)</td>
+    <td><code>application.yml</code>: подключение к <code>practice4_db</code>, пул HikariCP (10 соединений, 3000ms таймаут), <code>${DB_PASSWORD:}</code></td>
+    <td><code>src/main/resources/application.yml</code></td>
+  </tr>
+  <tr>
+    <td><b>Сущности (@Entity)</b> со связями <code>LAZY</code> и стратегией ID</td>
+    <td><code>Category</code> и <code>Product</code>. Связь <code>@ManyToOne(fetch = FetchType.LAZY)</code>. Генерация <code>GenerationType.IDENTITY</code>. Поле <code>@Version</code>.</td>
+    <td><code>model/Category.java</code>, <code>model/Product.java</code></td>
+  </tr>
+  <tr>
+    <td><b>Spring Data Repositories</b> (Derived + @Query)</td>
+    <td><code>findByName</code>, <code>findByCategoryId</code> (Derived).<br><code>findByIdWithCategory</code> (c <code>JOIN FETCH</code>), <code>reduceStockAtomic</code> (<code>@Modifying</code>).</td>
+    <td><code>repository/CategoryRepository.java</code>, <code>repository/ProductRepository.java</code></td>
+  </tr>
+  <tr>
+    <td><b>Пагинация и сортировка</b> (Pageable, capped size)</td>
+    <td><code>GET /api/products</code> принимает <code>Pageable</code>, <code>@PageableDefault(size = 10, sort = "id")</code>, ограничение <code>max-page-size: 100</code> в YAML.</td>
+    <td><code>web/ProductController.java</code>, <code>service/ProductService.java</code></td>
+  </tr>
+  <tr>
+    <td><b>Методы сервиса с @Transactional</b></td>
+    <td>Чтение: <code>@Transactional(readOnly = true)</code>.<br>Изменение/списание: <code>@Transactional</code>. Dirty checking без ручного вызова <code>save()</code>.</td>
+    <td><code>service/CategoryService.java</code>, <code>service/ProductService.java</code></td>
+  </tr>
+  <tr>
+    <td><b>ddl-auto=validate + schema.sql</b></td>
+    <td>Hibernate только валидирует схему. Таблицы с ограничениями создаются скриптом <code>schema.sql</code>.</td>
+    <td><code>resources/schema.sql</code>, <code>application.yml</code></td>
+  </tr>
+</table>
+
+<h2>🗣 2. Ответы на вопросы преподавателя (Топ-10)</h2>
+
+<div class="qa">
+  <div class="q">1. Что такое HikariCP и почему мы используем именно его? (Слайды 8–9)</div>
+  <div class="a">
+    HikariCP — это легковесный и сверхбыстрый пул соединений с базой данных по умолчанию в Spring Boot. Открытие нового соединения к PostgreSQL очень дорого (TCP handshake, TLS, авторизация SCRAM-SHA-256, системный fork процесса postmaster). HikariCP держит открытые соединения и переиспользует их. При вызове <code>connection.close()</code> сокет не закрывается, а возвращается обратно в пул.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">2. Почему размер пула всего 10, а таймаут 3000 мс? (Слайд 9)</div>
+  <div class="a">
+    В PostgreSQL на каждое соединение создается отдельный процесс ОС. Большой пул перегружает процессор переключением контекста (context switching). Оптимальный размер: <code>(ядра × 2) + диски</code>. Таймаут 3000 мс реализует стратегию <b>fail-fast</b>: если все соединения заняты, клиент получит ошибку через 3 секунды, а не будет зависать на полминуты.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">3. Как работает аннотация @Transactional под капотом? (Слайд 13)</div>
+  <div class="a">
+    Spring создает <b>CGLIB-прокси</b> над бином сервиса. При вызове метода <code>TransactionInterceptor</code> запрашивает соединение у HikariCP, ставит <code>autoCommit = false</code> и привязывает соединение к текущему потоку через <b><code>ThreadLocal</code></b>. Все репозитории внутри метода используют это одно соединение. Если метод завершился успешно — вызывается <code>COMMIT</code>. Если выброшен <code>RuntimeException</code> или <code>Error</code> — вызывается <code>ROLLBACK</code>.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">4. Почему нельзя вызывать @Transactional метод из того же класса через this? (Слайд 13 и 29)</div>
+  <div class="a">
+    Это ошибка <b>Self-invocation</b>. Вызов через <code>this.method()</code> идет напрямую к нашему объекту в памяти в обход CGLIB-прокси Spring. Перехватчик не сработает, и транзакция не откроется.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">5. Зачем в сущности Product поле @Version? (Слайды 15, 19, 28)</div>
+  <div class="a">
+    Для <b>оптимистичной блокировки (Optimistic Locking)</b> при конкурентном списании остатков товара (решение проблемы Lost Update). При изменении остатка Hibernate генерирует запрос: <code>UPDATE product SET stock = ?, version = 2 WHERE id = ? AND version = 1</code>. Если два потока пытались списать товар одновременно, второй обновит 0 строк, получит <code>OptimisticLockException</code>, транзакция откатится, а клиент получит понятный HTTP 409 Conflict.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">6. Почему все связи помечены FetchType.LAZY и зачем выключен open-in-view? (Слайды 22 и 29)</div>
+  <div class="a">
+    По умолчанию <code>@ManyToOne</code> ставит <code>EAGER</code>, что приводит к неконтролируемым скрытым JOIN-запросам на каждый чих. Правило курса: делать все связи <code>LAZY</code>, а если связанные данные нужны — загружать их явно через <code>JOIN FETCH</code>. Опция <code>open-in-view: false</code> закрывает сессию сразу после выхода из сервиса, предотвращая удержание соединения из пула во время сериализации JSON в контроллере.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">7. Что такое Dirty Checking? Зачем мы не вызываем repository.save() при обновлении? (Слайд 23)</div>
+  <div class="a">
+    Внутри <code>@Transactional</code> загруженная сущность находится в состоянии <b>Managed</b> в Persistence Context (кэше 1-го уровня). Hibernate делает снимок (snapshot) объекта. При выходе из метода срабатывает <b>flush</b>: Hibernate сравнивает текущие поля с исходным снимком, видит изменения и сам генерирует SQL <code>UPDATE</code> перед коммитом.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">8. В чем разница между Derived Query и @Query? (Слайды 25–26)</div>
+  <div class="a">
+    <b>Derived Query:</b> Spring Data парсит имя метода (например, <code>findByCategoryId</code>) и автоматически генерирует JPQL запрос при старте приложения.<br>
+    <b>@Query:</b> мы пишем явный JPQL-запрос сами. Используется для сложных выборок, загрузки связей через <code>JOIN FETCH</code> (для избежания N+1 проблемы) или для пакетных обновлений через <code>@Modifying</code>.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">9. Почему в контроллере используется Pageable и ограничение размера страницы? (Слайд 27)</div>
+  <div class="a">
+    Запрос всей таблицы целиком (<code>findAll()</code>) «убьет» память сервера и базу при росте данных. <code>Pageable</code> генерирует запросы с <code>LIMIT</code> и <code>OFFSET</code> в PostgreSQL. Ограничение <code>max-page-size: 100</code> защищает базу от запросов вида <code>size=1000000</code>.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="q">10. Почему ddl-auto установлен в validate, а не update? (Слайды 6, 29, 30)</div>
+  <div class="a">
+    В реальной разработке (Production) автоматическое изменение таблиц через <code>update</code> или <code>create-drop</code> недопустимо — это чревато случайным удалением колонок или зависанием базы. Схему мы объявляем явно в <code>schema.sql</code> (а со следующей 6-й недели переведем под миграции <b>Flyway</b>). Hibernate в режиме <code>validate</code> только проверяет, что сущности Java строго соответствуют колонкам в PostgreSQL.
+  </div>
+</div>
+
+</body>
+</html>

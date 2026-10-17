@@ -1,0 +1,18 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/practice4_db
+    username: china
+    password: ${DB_PASSWORD:}
+    hikari:
+      pool-name: shop-test-pool
+      maximum-pool-size: 5
+      connection-timeout: 3000
+
+logging:
+  level:
+    root: WARN
+    org.hibernate.SQL: warn
+    com.example.practice4: INFO

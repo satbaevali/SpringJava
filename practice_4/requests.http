@@ -1,0 +1,107 @@
+### ========================================================
+### PRACTICE 4: PostgreSQL + Spring Data JPA + Pageable API
+### ========================================================
+
+### 1. Получить список всех категорий (200 OK)
+GET http://localhost:8080/api/categories
+
+### 2. Получить категорию по ID (200 OK)
+GET http://localhost:8080/api/categories/1
+
+### 3. Создать новую категорию (201 Created + заголовок Location)
+POST http://localhost:8080/api/categories
+Content-Type: application/json
+
+{
+  "name": "Бытовая техника",
+  "description": "Техника для кухни и дома"
+}
+
+### 4. Негативный кейс: Дубликат названия категории (409 Conflict)
+POST http://localhost:8080/api/categories
+Content-Type: application/json
+
+{
+  "name": "Электроника",
+  "description": "Повторная категория"
+}
+
+### 5. Негативный кейс: Ошибка валидации категории (400 Bad Request)
+POST http://localhost:8080/api/categories
+Content-Type: application/json
+
+{
+  "name": ""
+}
+
+### ========================================================
+### ТОВАРЫ (Пагинация, сортировка, фильтрация через JPA)
+### ========================================================
+
+### 6. Пагинация: Первая страница по 2 товара, сортировка по цене убыванию (слайды 27 и 30)
+GET http://localhost:8080/api/products?page=0&size=2&sort=price,desc
+
+### 7. Пагинация: Вторая страница по 2 товара
+GET http://localhost:8080/api/products?page=1&size=2&sort=price,desc
+
+### 8. Фильтрация по категории через Derived Query: только Книги (categoryId = 2)
+GET http://localhost:8080/api/products?categoryId=2&page=0&size=10
+
+### 9. Получить товар по ID через JOIN FETCH (слайд 22 и 26)
+GET http://localhost:8080/api/products/1
+
+### 10. Создать новый товар (201 Created + Location)
+POST http://localhost:8080/api/products
+Content-Type: application/json
+
+{
+  "name": "Клавиатура Keychron K2",
+  "price": 89.99,
+  "stock": 10,
+  "categoryId": 1
+}
+
+### 11. Негативный кейс: Валидация товара (отрицательная цена) -> 400 Bad Request
+POST http://localhost:8080/api/products
+Content-Type: application/json
+
+{
+  "name": "Невалидный товар",
+  "price": -10.00,
+  "stock": -1,
+  "categoryId": 1
+}
+
+### 12. Негативный кейс: Создание товара с несуществующей категорией (404 Not Found)
+POST http://localhost:8080/api/products
+Content-Type: application/json
+
+{
+  "name": "Товар без категории",
+  "price": 50.00,
+  "stock": 5,
+  "categoryId": 9999
+}
+
+### ========================================================
+### БИЗНЕС-ЛОГИКА: Транзакционное списание остатка (@Version)
+### ========================================================
+
+### 13. Успешное списание 2 единиц товара со склада
+POST http://localhost:8080/api/products/1/reduce-stock
+Content-Type: application/json
+
+{
+  "quantity": 2
+}
+
+### 14. Негативный кейс: Попытка списать больше, чем есть на складе (409 Conflict)
+POST http://localhost:8080/api/products/1/reduce-stock
+Content-Type: application/json
+
+{
+  "quantity": 1000
+}
+
+### 15. Удалить товар (204 No Content)
+DELETE http://localhost:8080/api/products/1
