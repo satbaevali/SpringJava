@@ -2,6 +2,8 @@ package com.example.sis2.catalog.app;
 
 import com.example.sis2.catalog.domain.*;
 import com.example.sis2.common.exception.ResourceNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -33,12 +35,13 @@ public class ProductService {
         return productRepository.findAll(pageable);
     }
 
+    @Cacheable(value = "productById", key = "#id")
     public Product getProductById(Long id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Товар с ID " + id + " не найден"));
+        return findProductOrThrow(id);
     }
 
     @Transactional
+    @CacheEvict(value = "productById", allEntries = true)
     public Product createProduct(String name, BigDecimal price, int stock, Long categoryId) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Категория с ID " + categoryId + " не найдена"));
@@ -48,8 +51,9 @@ public class ProductService {
     }
 
     @Transactional
+    @CacheEvict(value = "productById", key = "#id")
     public Product updateProduct(Long id, String name, BigDecimal price, int stock, Long categoryId) {
-        Product product = getProductById(id);
+        Product product = findProductOrThrow(id);
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Категория с ID " + categoryId + " не найдена"));
 
@@ -58,18 +62,25 @@ public class ProductService {
     }
 
     @Transactional
+    @CacheEvict(value = "productById", key = "#id")
     public Product reduceStock(Long id, int quantity) {
-        Product product = getProductById(id);
+        Product product = findProductOrThrow(id);
         stockPolicy.validateBulkReduction(product, quantity);
         product.reduceStock(quantity);
         return productRepository.save(product);
     }
 
     @Transactional
+    @CacheEvict(value = "productById", key = "#id")
     public void deleteProduct(Long id) {
         if (!productRepository.existsById(id)) {
             throw new ResourceNotFoundException("Товар с ID " + id + " не найден");
         }
         productRepository.deleteById(id);
+    }
+
+    private Product findProductOrThrow(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Товар с ID " + id + " не найден"));
     }
 }

@@ -20,12 +20,10 @@ public class Product {
     @Column(nullable = false)
     private int stock;
 
-    // ВАЖНО: LAZY ассоциация (слайды 22 и 29)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    // Поле оптимистичной блокировки (слайды 19 и 29)
     @Version
     private Long version;
 

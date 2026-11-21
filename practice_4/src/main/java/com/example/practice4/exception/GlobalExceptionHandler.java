@@ -19,7 +19,6 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // 404 Not Found
     @ExceptionHandler(ResourceNotFoundException.class)
     public ProblemDetail handleNotFound(ResourceNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
@@ -29,7 +28,6 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // 409 Conflict: Бизнес-конфликт (например, дубликат категории)
     @ExceptionHandler(ResourceConflictException.class)
     public ProblemDetail handleConflict(ResourceConflictException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
@@ -39,7 +37,6 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // 409 Conflict: Недостаточно товара на складе
     @ExceptionHandler(InsufficientStockException.class)
     public ProblemDetail handleInsufficientStock(InsufficientStockException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
@@ -49,7 +46,6 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // 409 Conflict: Оптимистичная блокировка при параллельной записи (Слайды 19 и 28)
     @ExceptionHandler(OptimisticLockException.class)
     public ProblemDetail handleOptimisticLock(OptimisticLockException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
@@ -62,7 +58,6 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // 409 Conflict: Нарушение уникальности или внешнего ключа в БД (Слайд 28)
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ProblemDetail handleDataIntegrity(DataIntegrityViolationException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
@@ -75,7 +70,6 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // 400 Bad Request: Ошибки валидации @Valid
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
@@ -94,7 +88,6 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // 400 Bad Request: Некорректный JSON
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ProblemDetail handleMalformedJson(HttpMessageNotReadableException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
@@ -106,7 +99,6 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // 400 Bad Request: Неверный тип в URL (например, /api/products/abc)
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         String detail = String.format("Параметр '%s' должен быть числом", ex.getName());
@@ -116,7 +108,6 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // 500 Internal Server Error
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneralException(Exception ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(

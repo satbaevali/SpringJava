@@ -24,9 +24,6 @@ public class ProductController {
         this.productService = productService;
     }
 
-    // ТРЕБОВАНИЕ ПРАКТИКИ (Слайды 27 и 30):
-    // Эндпоинт со списком товаров с поддержкой пагинации и сортировки (Pageable)
-    // Пример запроса: GET /api/products?page=0&size=10&sort=price,desc
     @GetMapping
     public ResponseEntity<Page<ProductResponse>> getProducts(
             @RequestParam(required = false) Long categoryId,
@@ -43,7 +40,6 @@ public class ProductController {
     public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest request) {
         ProductResponse created = productService.createProduct(request);
 
-        // 201 Created с заголовком Location (слайд 28)
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(created.id())
@@ -59,7 +55,6 @@ public class ProductController {
         return ResponseEntity.ok(productService.updateProduct(id, request));
     }
 
-    // Списание остатка товара (демонстрация транзакции и оптимистичной блокировки @Version)
     @PostMapping("/{id}/reduce-stock")
     public ResponseEntity<ProductResponse> reduceStock(
             @PathVariable Long id,

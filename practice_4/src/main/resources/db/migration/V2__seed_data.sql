@@ -1,4 +1,4 @@
--- V2__seed_data.sql: Наполнение базы начальными тестовыми данными (seed data)
+
 
 INSERT INTO category (name, description) VALUES
     ('Электроника', 'Гаджеты, смартфоны и компьютеры'),

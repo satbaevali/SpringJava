@@ -24,7 +24,6 @@ public class ProductService {
         this.categoryRepository = categoryRepository;
     }
 
-    // Пагинация списка товаров с JOIN FETCH (слайды 26, 27, 30)
     @Transactional(readOnly = true)
     public Page<ProductResponse> getAllProducts(Long categoryId, Pageable pageable) {
         Page<Product> page;
@@ -36,7 +35,6 @@ public class ProductService {
         return page.map(this::toResponse);
     }
 
-    // Получение по ID с JOIN FETCH (избегаем LazyInitializationException, слайд 22)
     @Transactional(readOnly = true)
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findByIdWithCategory(id)
@@ -68,7 +66,6 @@ public class ProductService {
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Категория с id=" + request.categoryId() + " не найдена"));
 
-        // Dirty Checking (слайд 23): меняем поля, Hibernate сам отправит UPDATE в БД
         product.setName(request.name());
         product.setPrice(request.price());
         product.setStock(request.stock());
@@ -77,7 +74,6 @@ public class ProductService {
         return toResponse(product);
     }
 
-    // Списание остатка с защитой @Version (слайды 19, 28)
     @Transactional
     public ProductResponse reduceStock(Long id, int quantity) {
         Product product = productRepository.findByIdWithCategory(id)
@@ -89,8 +85,6 @@ public class ProductService {
             );
         }
 
-        // Вызываем бизнес-метод сущности: меняет поле в памяти,
-        // а при коммите Hibernate проверит @Version (UPDATE product SET stock=?, version=? WHERE id=? AND version=?)
         product.reduceStock(quantity);
 
         return toResponse(product);

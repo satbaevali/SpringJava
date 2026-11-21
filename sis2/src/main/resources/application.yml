@@ -10,6 +10,12 @@ spring:
   profiles:
     active: dev
 
+  cache:
+    type: caffeine
+    cache-names: categories, categoryById, productById
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=10m
+
   jpa:
     open-in-view: false
     hibernate:

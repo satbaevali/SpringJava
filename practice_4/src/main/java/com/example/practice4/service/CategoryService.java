@@ -20,7 +20,6 @@ public class CategoryService {
         this.categoryRepository = categoryRepository;
     }
 
-    // Чтение: readOnly = true оптимизирует сессию Hibernate (слайд 16 и 30)
     @Transactional(readOnly = true)
     public List<CategoryResponse> getAllCategories() {
         return categoryRepository.findAll().stream()
@@ -35,7 +34,6 @@ public class CategoryService {
         return toResponse(category);
     }
 
-    // Запись: полноценная транзакция @Transactional (слайд 13 и 30)
     @Transactional
     public CategoryResponse createCategory(CategoryRequest request) {
         if (categoryRepository.existsByName(request.name())) {
@@ -51,13 +49,10 @@ public class CategoryService {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Категория с id=" + id + " не найдена"));
 
-        // Если имя меняется, проверяем на уникальность
         if (!category.getName().equalsIgnoreCase(request.name()) && categoryRepository.existsByName(request.name())) {
             throw new ResourceConflictException("Категория с именем '" + request.name() + "' уже существует");
         }
 
-        // Dirty Checking (слайд 23): меняем поля в Managed объекте,
-        // Hibernate автоматически сгенерирует UPDATE при коммите транзакции!
         category.setName(request.name());
         category.setDescription(request.description());
 

@@ -13,7 +13,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/categories")
+@RequestMapping(value = "/api/categories", produces = "application/json;charset=UTF-8")
 public class CategoryController {
 
     private final CategoryService categoryService;

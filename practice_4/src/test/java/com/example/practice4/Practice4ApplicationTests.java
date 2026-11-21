@@ -41,7 +41,7 @@ class Practice4ApplicationTests {
     }
 
     @Test
-    @DisplayName("Derived Query: Поиск категории по имени (слайд 25)")
+    @DisplayName("Derived Query: Поиск категории по имени")
     void testDerivedQueryFindByName() {
         Optional<Category> category = categoryRepository.findByName("Электроника");
         assertThat(category).isPresent();
@@ -49,7 +49,7 @@ class Practice4ApplicationTests {
     }
 
     @Test
-    @DisplayName("Derived Query + Pageable: Пагинация товаров по категории (слайды 25, 27)")
+    @DisplayName("Derived Query + Pageable: Пагинация товаров по категории")
     void testDerivedQueryWithPagination() {
         Category category = categoryRepository.findByName("Электроника").orElseThrow();
         PageRequest pageRequest = PageRequest.of(0, 2, Sort.by("price").descending());
@@ -62,7 +62,7 @@ class Practice4ApplicationTests {
     }
 
     @Test
-    @DisplayName("@Query c JOIN FETCH: Загрузка товара вместе с категорией за 1 запрос (слайды 22, 26)")
+    @DisplayName("@Query c JOIN FETCH: Загрузка товара вместе с категорией за 1 запрос")
     void testJoinFetchQuery() {
         Product firstProduct = productRepository.findAll().get(0);
 
@@ -70,22 +70,19 @@ class Practice4ApplicationTests {
         assertThat(productOpt).isPresent();
 
         Product product = productOpt.get();
-        // Категория доступна без LazyInitializationException!
         assertThat(product.getCategory()).isNotNull();
         assertThat(product.getCategory().getName()).isNotBlank();
     }
 
     @Test
-    @DisplayName("Транзакционное списание остатка и защита от перерасхода (@Version, слайды 19, 28)")
+    @DisplayName("Транзакционное списание остатка и защита от перерасхода (@Version)")
     void testReduceStockAndConcurrencyCheck() {
         Product product = productRepository.findAll().get(0);
         int initialStock = product.getStock();
 
-        // Успешное списание
         ProductResponse response = productService.reduceStock(product.getId(), 1);
         assertThat(response.stock()).isEqualTo(initialStock - 1);
 
-        // Ошибка при попытке списать больше, чем есть
         assertThatThrownBy(() -> productService.reduceStock(product.getId(), 99999))
                 .isInstanceOf(InsufficientStockException.class);
     }
