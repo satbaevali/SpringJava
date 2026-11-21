@@ -1,0 +1,51 @@
+server:
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      force-response: true
+      enabled: true
+
+spring:
+  profiles:
+    active: dev
+
+  cache:
+    type: caffeine
+    cache-names: categories, categoryById, productById
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=10m
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  data:
+    web:
+      pageable:
+        max-page-size: 100
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+app:
+  exchange:
+    base-url: ${EXCHANGE_BASE_URL:http://localhost:8090}
+    connect-timeout: 1s
+    read-timeout: 2s
+    fallback-rates:
+      KZT: 500.00
+      EUR: 0.92
+      USD: 1.00
