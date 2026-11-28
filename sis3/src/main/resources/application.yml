@@ -1,0 +1,64 @@
+server:
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      force-response: true
+      enabled: true
+
+spring:
+  profiles:
+    active: dev
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: catalog-audit-consumer-group
+      auto-offset-reset: earliest
+
+  cache:
+    type: caffeine
+    cache-names: categories, categoryById, productById
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=10m
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  data:
+    web:
+      pageable:
+        max-page-size: 100
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+app:
+  kafka:
+    auto-startup: true
+  exchange:
+    base-url: ${EXCHANGE_BASE_URL:http://localhost:8090}
+    connect-timeout: 1s
+    read-timeout: 2s
+    max-retry-attempts: 3
+    retry-wait-duration: 100ms
+    circuit-breaker-failure-rate-threshold: 50.0
+    circuit-breaker-minimum-calls: 4
+    circuit-breaker-wait-duration-in-open-state: 5s
+    fallback-rates:
+      KZT: 500.00
+      EUR: 0.92
+      USD: 1.00
